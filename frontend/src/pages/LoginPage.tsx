@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Alert } from '../components/Alert'
@@ -6,7 +6,7 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { IconBook, IconBrain, IconConnections, IconFlashcards, IconSparkles } from '../components/Icons'
 
 export function LoginPage() {
-  const { login } = useAuth()
+  const { user, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [email, setEmail] = useState('')
@@ -14,13 +14,23 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  // Redireciona imediatamente assim que o usuário estiver autenticado
+  useEffect(() => {
+    if (user) {
+      const target = (location.state as { from?: string } | null)?.from ?? '/materiais'
+      navigate(target, { replace: true })
+    }
+  }, [user, navigate, location])
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
     try {
-      await login(email, password)
-      navigate((location.state as { from?: string } | null)?.from ?? '/materiais', { replace: true })
+      const logged = await login(email, password)
+      if (logged) {
+        navigate('/materiais', { replace: true })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível entrar.')
     } finally {
@@ -32,8 +42,10 @@ export function LoginPage() {
     setError(null)
     setSubmitting(true)
     try {
-      await login('maria@exemplo.com', 'senha-forte-123')
-      navigate('/materiais', { replace: true })
+      const logged = await login('maria@exemplo.com', 'senha-forte-123')
+      if (logged) {
+        navigate('/materiais', { replace: true })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao autenticar conta de teste.')
     } finally {

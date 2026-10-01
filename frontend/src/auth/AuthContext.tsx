@@ -1,11 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { ApiError, authApi, type User } from '../api/client'
+import { ApiError, authApi, tokenStore, type User } from '../api/client'
 
 interface AuthState {
   user: User | null
   loading: boolean // true enquanto verificamos a sessão existente ao abrir o app
-  login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<User>
+  register: (name: string, email: string, password: string) => Promise<User>
   logout: () => Promise<void>
 }
 
@@ -15,11 +15,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Ao carregar a página, pergunta à API quem está logado (o cookie vai junto).
+  // Ao carregar a página, pergunta à API quem está logado (o token vai junto)
   useEffect(() => {
     authApi
       .me()
-      .then(setUser)
+      .then((u) => {
+        setUser(u)
+      })
       .catch((err) => {
         if (!(err instanceof ApiError && err.status === 401)) console.error(err)
         setUser(null)
@@ -28,16 +30,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
-    setUser(await authApi.login(email, password))
+    const loggedUser = await authApi.login(email, password)
+    setUser(loggedUser)
+    return loggedUser
   }, [])
 
   const register = useCallback(async (name: string, email: string, password: string) => {
-    setUser(await authApi.register(name, email, password))
+    const loggedUser = await authApi.register(name, email, password)
+    setUser(loggedUser)
+    return loggedUser
   }, [])
 
   const logout = useCallback(async () => {
-    await authApi.logout()
-    setUser(null)
+    try {
+      await authApi.logout()
+    } finally {
+      tokenStore.clear()
+      setUser(null)
+    }
   }, [])
 
   return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>
