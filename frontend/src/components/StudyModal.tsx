@@ -138,7 +138,9 @@ export function StudyModal({ cards, materialTitle, onClose, onCardReviewed }: St
                     onClick={() => handleRating(0)}
                     disabled={submitting}
                   >
-                    <strong>1. Errei</strong>
+                    <strong>
+                      Errei <kbd className="shortcut-kbd">1</kbd>
+                    </strong>
                     <span className="rating-interval">1 dia</span>
                   </button>
                   <button
@@ -146,7 +148,9 @@ export function StudyModal({ cards, materialTitle, onClose, onCardReviewed }: St
                     onClick={() => handleRating(1)}
                     disabled={submitting}
                   >
-                    <strong>2. Difícil</strong>
+                    <strong>
+                      Difícil <kbd className="shortcut-kbd">2</kbd>
+                    </strong>
                     <span className="rating-interval">2 dias</span>
                   </button>
                   <button
@@ -154,7 +158,9 @@ export function StudyModal({ cards, materialTitle, onClose, onCardReviewed }: St
                     onClick={() => handleRating(2)}
                     disabled={submitting}
                   >
-                    <strong>3. Bom</strong>
+                    <strong>
+                      Bom <kbd className="shortcut-kbd">3</kbd>
+                    </strong>
                     <span className="rating-interval">3 dias</span>
                   </button>
                   <button
@@ -162,7 +168,9 @@ export function StudyModal({ cards, materialTitle, onClose, onCardReviewed }: St
                     onClick={() => handleRating(3)}
                     disabled={submitting}
                   >
-                    <strong>4. Fácil</strong>
+                    <strong>
+                      Fácil <kbd className="shortcut-kbd">4</kbd>
+                    </strong>
                     <span className="rating-interval">4+ dias</span>
                   </button>
                 </>
@@ -171,7 +179,7 @@ export function StudyModal({ cards, materialTitle, onClose, onCardReviewed }: St
                   className="btn btn-primary btn-block btn-reveal"
                   onClick={() => setIsFlipped(true)}
                 >
-                  Mostrar Resposta (Espaço)
+                  Mostrar Resposta <kbd className="shortcut-kbd">Espaço</kbd>
                 </button>
               )}
             </div>
