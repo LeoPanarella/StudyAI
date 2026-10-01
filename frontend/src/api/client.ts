@@ -4,6 +4,7 @@
 // em um iframe de outro domínio onde navegadores bloqueiam cookies e localStorage de terceiros.
 
 const TOKEN_KEY = 'studyai_token'
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
 let inMemoryToken: string | null = null
 
@@ -173,7 +174,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers.set('Content-Type', 'application/json')
   }
 
-  let targetUrl = path
+  let targetUrl = path.startsWith('/api') && API_BASE ? `${API_BASE}${path}` : path
   const token = tokenStore.get()
   const isAuthRoute = path.startsWith('/api/auth/login') || path.startsWith('/api/auth/register')
   if (token && !isAuthRoute) {
