@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 480" width="100%" height="100%" style="background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Marcador de seta simples -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#334155" />
+    </marker>
+  </defs>
+
+  <!-- Título simples e direto -->
+  <text x="40" y="38" fill="#0f172a" font-size="16" font-weight="bold">Diagrama de Implantação Simplificado — StudyAI</text>
+  <text x="40" y="56" fill="#64748b" font-size="12">Fase de Construção • Iteração 1 • Modelo Conceitual UML</text>
+  <line x1="40" y1="68" x2="880" y2="68" stroke="#e2e8f0" stroke-width="1.5" />
+
+  <!-- =================================================================== -->
+  <!-- NÓ 1: CLIENTE (DISPOSITIVO DO USUÁRIO) -->
+  <!-- =================================================================== -->
+  <g transform="translate(40, 110)">
+    <!-- Cubo UML 3D Simples -->
+    <polygon points="0,12 12,0 180,0 180,180 168,192 0,192" fill="#f8fafc" stroke="#334155" stroke-width="1.5"/>
+    <polygon points="168,12 180,0 180,180 168,192" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <polygon points="0,12 12,0 180,0 168,12" fill="#cbd5e1" stroke="#334155" stroke-width="1.5"/>
+    <rect x="0" y="12" width="168" height="180" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+
+    <text x="84" y="38" fill="#64748b" font-size="10" text-anchor="middle">«device»</text>
+    <text x="84" y="55" fill="#0f172a" font-size="12" font-weight="bold" text-anchor="middle">Computador do Aluno</text>
+    <line x1="12" y1="65" x2="156" y2="65" stroke="#e2e8f0" stroke-width="1"/>
+
+    <!-- Artefato interno -->
+    <rect x="12" y="80" width="144" height="92" rx="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1"/>
+    <text x="84" y="102" fill="#475569" font-size="9.5" text-anchor="middle">«artifact»</text>
+    <text x="84" y="120" fill="#0f172a" font-size="11" font-weight="bold" text-anchor="middle">Navegador Web</text>
+    <text x="84" y="138" fill="#2563eb" font-size="10" font-weight="bold" text-anchor="middle">StudyAI Frontend</text>
+    <text x="84" y="154" fill="#64748b" font-size="9" text-anchor="middle">(React 18 / SPA)</text>
+  </g>
+
+  <!-- =================================================================== -->
+  <!-- NÓ 2: SERVIDOR WEB & APLICAÇÃO (DOCKER HOST) -->
+  <!-- =================================================================== -->
+  <g transform="translate(300, 110)">
+    <!-- Cubo UML 3D -->
+    <polygon points="0,12 12,0 300,0 300,310 288,322 0,322" fill="#f8fafc" stroke="#334155" stroke-width="1.5"/>
+    <polygon points="288,12 300,0 300,310 288,322" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <polygon points="0,12 12,0 300,0 288,12" fill="#cbd5e1" stroke="#334155" stroke-width="1.5"/>
+    <rect x="0" y="12" width="288" height="310" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+
+    <text x="144" y="38" fill="#64748b" font-size="10" text-anchor="middle">«node / server»</text>
+    <text x="144" y="55" fill="#0f172a" font-size="12" font-weight="bold" text-anchor="middle">Servidor de Aplicação (Linux)</text>
+    <line x1="16" y1="65" x2="272" y2="65" stroke="#e2e8f0" stroke-width="1"/>
+
+    <!-- Componente 1: Frontend Nginx -->
+    <rect x="16" y="80" width="256" height="95" rx="4" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.2"/>
+    <text x="26" y="100" fill="#0369a1" font-size="9.5" font-weight="bold">«execution environment» Nginx</text>
+    <text x="26" y="118" fill="#0f172a" font-size="11" font-weight="bold">Servidor Web &amp; Proxy Reverso</text>
+    <text x="26" y="136" fill="#334155" font-size="9.5">• Distribuição de arquivos estáticos HTML/JS</text>
+    <text x="26" y="152" fill="#334155" font-size="9.5">• Redirecionamento de rotas /api/*</text>
+
+    <!-- Linha interna Nginx -> FastAPI -->
+    <path d="M 144 175 L 144 200" fill="none" stroke="#0ea5e9" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="152" y="192" fill="#0284c7" font-size="8.5">HTTP :8000</text>
+
+    <!-- Componente 2: Backend FastAPI -->
+    <rect x="16" y="202" width="256" height="105" rx="4" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.2"/>
+    <text x="26" y="222" fill="#5b21b6" font-size="9.5" font-weight="bold">«execution environment» Python / FastAPI</text>
+    <text x="26" y="240" fill="#0f172a" font-size="11" font-weight="bold">API REST &amp; Regras de Negócio</text>
+    <text x="26" y="258" fill="#334155" font-size="9.5">• Autenticação JWT &amp; Controle de Sessão</text>
+    <text x="26" y="274" fill="#334155" font-size="9.5">• Leitura de PDFs &amp; Algoritmo SM-2</text>
+    <text x="26" y="290" fill="#334155" font-size="9.5">• Grafo de Conhecimento &amp; Fila de IA</text>
+  </g>
+
+  <!-- =================================================================== -->
+  <!-- NÓ 3: SERVIDOR DE BANCO DE DADOS (POSTGRESQL) -->
+  <!-- =================================================================== -->
+  <g transform="translate(680, 110)">
+    <!-- Cubo UML 3D -->
+    <polygon points="0,12 12,0 200,0 200,180 188,192 0,192" fill="#f8fafc" stroke="#334155" stroke-width="1.5"/>
+    <polygon points="188,12 200,0 200,180 188,192" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <polygon points="0,12 12,0 200,0 188,12" fill="#cbd5e1" stroke="#334155" stroke-width="1.5"/>
+    <rect x="0" y="12" width="188" height="180" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+
+    <text x="94" y="38" fill="#64748b" font-size="10" text-anchor="middle">«database system»</text>
+    <text x="94" y="55" fill="#0f172a" font-size="12" font-weight="bold" text-anchor="middle">Banco de Dados</text>
+    <line x1="12" y1="65" x2="176" y2="65" stroke="#e2e8f0" stroke-width="1"/>
+
+    <!-- Artefato Banco -->
+    <rect x="12" y="80" width="164" height="92" rx="4" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1"/>
+    <text x="94" y="102" fill="#047857" font-size="9.5" text-anchor="middle">«database»</text>
+    <text x="94" y="120" fill="#0f172a" font-size="11" font-weight="bold" text-anchor="middle">PostgreSQL 17</text>
+    <text x="22" y="140" fill="#334155" font-size="9">• Usuários, Materiais &amp; PDFs</text>
+    <text x="22" y="156" fill="#334155" font-size="9">• Flashcards &amp; Conexões</text>
+  </g>
+
+  <!-- =================================================================== -->
+  <!-- NÓ 4: SERVIÇO EXTERNO (GOOGLE GEMINI) -->
+  <!-- =================================================================== -->
+  <g transform="translate(680, 320)">
+    <!-- Cubo UML 3D Nuvem -->
+    <polygon points="0,12 12,0 200,0 200,100 188,112 0,112" fill="#f8fafc" stroke="#334155" stroke-width="1.5"/>
+    <polygon points="188,12 200,0 200,100 188,112" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <polygon points="0,12 12,0 200,0 188,12" fill="#cbd5e1" stroke="#334155" stroke-width="1.5"/>
+    <rect x="0" y="12" width="188" height="100" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+
+    <text x="94" y="38" fill="#64748b" font-size="10" text-anchor="middle">«cloud service»</text>
+    <text x="94" y="55" fill="#0f172a" font-size="12" font-weight="bold" text-anchor="middle">Google Gemini AI</text>
+    <line x1="12" y1="65" x2="176" y2="65" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="94" y="86" fill="#7e22ce" font-size="10" font-weight="bold" text-anchor="middle">gemini-2.5-flash</text>
+    <text x="94" y="101" fill="#64748b" font-size="9" text-anchor="middle">Resumos &amp; Flashcards</text>
+  </g>
+
+  <!-- =================================================================== -->
+  <!-- CONEXÕES DE COMUNICAÇÃO -->
+  <!-- =================================================================== -->
+
+  <!-- Conexão 1: Cliente -> Servidor Web (HTTPS) -->
+  <path d="M 208 175 L 300 175" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="216" y="152" width="76" height="18" rx="3" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="254" y="165" fill="#1d4ed8" font-size="9" font-weight="bold" text-anchor="middle">HTTPS :80/443</text>
+
+  <!-- Conexão 2: FastAPI -> PostgreSQL (TCP 5432) -->
+  <path d="M 588 200 L 680 200" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="598" y="177" width="72" height="18" rx="3" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="634" y="190" fill="#047857" font-size="9" font-weight="bold" text-anchor="middle">TCP :5432</text>
+
+  <!-- Conexão 3: FastAPI -> Google Gemini (HTTPS 443) -->
+  <path d="M 588 380 L 680 380" fill="none" stroke="#9333ea" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="598" y="357" width="72" height="18" rx="3" fill="#faf5ff" stroke="#e9d5ff"/>
+  <text x="634" y="370" fill="#7e22ce" font-size="9" font-weight="bold" text-anchor="middle">HTTPS :443</text>
+
+</svg>
