@@ -141,9 +141,13 @@ export class ApiError extends Error {
 }
 
 async function parseError(res: Response): Promise<string> {
+  let text = ''
   try {
-    const data = await res.json()
+    text = await res.text()
+    const data = JSON.parse(text)
     if (typeof data?.detail === 'string') return data.detail
+    if (typeof data?.message === 'string') return data.message
+    if (typeof data?.error === 'string') return data.error
     if (Array.isArray(data?.detail)) {
       return data.detail.map((d: { msg?: string }) => d.msg?.replace(/^Value error, /, '')).join(' ')
     }
@@ -151,9 +155,15 @@ async function parseError(res: Response): Promise<string> {
     /* corpo não é JSON */
   }
   if (res.status === 502 || res.status === 503 || res.status === 504) {
-    return 'Servidor backend reiniciando ou temporariamente indisponível. Tente novamente em alguns segundos.'
+    return 'Servidor backend reiniciando ou temporariamente indisponível. Aguarde alguns instantes.'
   }
-  return res.statusText || 'Erro de comunicação com o servidor.'
+  if (res.status === 401) {
+    return 'E-mail ou senha incorretos.'
+  }
+  if (res.status === 429) {
+    return 'Muitas tentativas em pouco tempo. Aguarde alguns instantes antes de tentar novamente.'
+  }
+  return text || res.statusText || `Erro no servidor (código HTTP ${res.status}).`
 }
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -165,7 +175,8 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   let targetUrl = path
   const token = tokenStore.get()
-  if (token) {
+  const isAuthRoute = path.startsWith('/api/auth/login') || path.startsWith('/api/auth/register')
+  if (token && !isAuthRoute) {
     if (!headers.has('Authorization')) {
       headers.set('Authorization', `Bearer ${token}`)
     }
@@ -307,6 +318,7 @@ export interface AuthResponse {
 // ---------- Auth ----------
 
 async function authenticate(path: string, body: object): Promise<User> {
+  tokenStore.clear()
   const data = await api<AuthResponse>(path, { method: 'POST', body: JSON.stringify(body) })
   tokenStore.set(data.access_token)
   return data.user

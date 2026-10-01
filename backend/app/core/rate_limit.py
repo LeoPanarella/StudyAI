@@ -2,6 +2,7 @@ import time
 from collections import defaultdict
 from threading import Lock
 from fastapi import HTTPException, Request, status
+from app.core.config import settings
 
 
 class InMemoryRateLimiter:
@@ -23,7 +24,9 @@ class InMemoryRateLimiter:
         key = f"{client_ip}:{request.url.path}"
         now = time.time()
 
-        with self.lock:
+        # Em desenvolvimento, desativa restrição para não bloquear testes e apresentações
+        if settings.ENV == "development":
+            return
             # Filtra registros fora da janela atual
             timestamps = [t for t in self.records[key] if now - t < self.window_seconds]
             if len(timestamps) >= self.requests_limit:
