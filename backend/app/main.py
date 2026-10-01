@@ -50,7 +50,7 @@ def health(db: Session = Depends(get_db)):
 
 # Monta os arquivos do frontend estático (dist) para servir a SPA em qualquer porta
 from pathlib import Path
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -59,10 +59,12 @@ if (dist_dir / "assets").is_dir():
     app.mount("/assets", StaticFiles(directory=dist_dir / "assets"), name="assets")
 
 if (dist_dir / "index.html").is_file():
-    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
-    def serve_spa(full_path: str):
+    @app.api_route("/{full_path:path}", methods=["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
+    def serve_spa(request: Request, full_path: str):
         if full_path.startswith("api"):
-            raise HTTPException(status_code=404, detail="Endpoint da API não encontrado.")
+            raise HTTPException(status_code=404, detail=f"Endpoint da API '/{full_path}' não encontrado.")
+        if request.method not in ("GET", "HEAD"):
+            raise HTTPException(status_code=405, detail="Método não permitido para rota estática.")
         target = dist_dir / full_path
         if target.is_file():
             return FileResponse(target)

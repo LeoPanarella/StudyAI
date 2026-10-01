@@ -161,6 +161,9 @@ async function parseError(res: Response): Promise<string> {
   if (res.status === 401) {
     return 'E-mail ou senha incorretos.'
   }
+  if (res.status === 405) {
+    return 'Método não permitido (HTTP 405). Se estiver acessando pela Vercel, o backend FastAPI precisa estar ativo e a variável VITE_API_URL configurada nas variáveis de ambiente da Vercel.'
+  }
   if (res.status === 429) {
     return 'Muitas tentativas em pouco tempo. Aguarde alguns instantes antes de tentar novamente.'
   }
