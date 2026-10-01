@@ -42,7 +42,28 @@ app.add_middleware(
 app.include_router(api_router)
 
 
-@app.get("/api/health", tags=["health"])
+@app.api_route("/api/health", methods=["GET", "HEAD"], tags=["health"])
 def health(db: Session = Depends(get_db)):
     db.execute(text("SELECT 1"))
     return {"status": "ok", "database": "ok", "env": settings.ENV}
+
+
+# Monta os arquivos do frontend estático (dist) para servir a SPA em qualquer porta
+from pathlib import Path
+from fastapi import HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+dist_dir = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+if (dist_dir / "assets").is_dir():
+    app.mount("/assets", StaticFiles(directory=dist_dir / "assets"), name="assets")
+
+if (dist_dir / "index.html").is_file():
+    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
+    def serve_spa(full_path: str):
+        if full_path.startswith("api"):
+            raise HTTPException(status_code=404, detail="Endpoint da API não encontrado.")
+        target = dist_dir / full_path
+        if target.is_file():
+            return FileResponse(target)
+        return FileResponse(dist_dir / "index.html")
