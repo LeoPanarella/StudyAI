@@ -150,7 +150,10 @@ async function parseError(res: Response): Promise<string> {
   } catch {
     /* corpo não é JSON */
   }
-  return res.statusText || 'Erro inesperado.'
+  if (res.status === 502 || res.status === 503 || res.status === 504) {
+    return 'Servidor backend reiniciando ou temporariamente indisponível. Tente novamente em alguns segundos.'
+  }
+  return res.statusText || 'Erro de comunicação com o servidor.'
 }
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -175,7 +178,14 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   console.info(`[StudyAI API] ${init.method || 'GET'} ${path} (token=${Boolean(token)})`)
-  const res = await fetch(targetUrl, { credentials: 'include', ...init, headers })
+  let res: Response
+  try {
+    res = await fetch(targetUrl, { credentials: 'include', ...init, headers })
+  } catch (netErr) {
+    console.error('[StudyAI API Network Error]', netErr)
+    throw new ApiError(0, 'Não foi possível conectar ao servidor. Aguarde alguns instantes e tente novamente.')
+  }
+
   if (!res.ok) {
     // Se a rota era autenticada e deu 401, limpa o token. Não limpa na rota /auth/me inicial vazia.
     if (res.status === 401 && token) {
