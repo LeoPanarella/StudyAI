@@ -57,6 +57,17 @@ export function LoginPage() {
           <button className="btn btn-primary btn-block" disabled={submitting}>
             {submitting ? 'Entrando…' : 'Entrar'}
           </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm btn-block"
+            style={{ marginTop: '0.4rem', border: '1px dashed var(--border)', fontSize: '0.85rem' }}
+            onClick={() => {
+              setEmail('maria@exemplo.com')
+              setPassword('senha-forte-123')
+            }}
+          >
+            Preencher com conta de teste (Maria)
+          </button>
         </form>
         <p className="auth-switch muted">
           Ainda não tem conta? <Link to="/cadastro">Criar conta</Link>
