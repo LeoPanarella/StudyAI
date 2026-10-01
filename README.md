@@ -17,6 +17,25 @@ de revisão espaçada, tutor de IA contextualizado e plano de estudos.
 | 5 | Tutor de IA (chat com contexto do material) | Próxima etapa |
 | 6 | Plano de estudos (CRUD) | Em planejamento |
 
+## Design System & Identidade Visual UI/UX
+
+A interface visual do StudyAI foi estruturada e aprimorada seguindo os padrões do repositório **[`bergside/awesome-design-skills`](https://github.com/bergside/awesome-design-skills)** (especificações em `design-system/`):
+
+* **`minimal` & `clean`:** Hierarquia clara com escala modular (4/8/12/16/24/32px), ausência de poluição visual e contraste WCAG AA.
+* **`shadcn`:** Micro-interações táteis nos botões (`active: scale(0.985)`), anéis de foco acessíveis (`focus-visible`) e consistência de estados.
+* **`sleek` & `refined`:** Barra de navegação com *glassmorphism* sutil (`backdrop-filter: blur(12px)`), sombras multicamadas em 5 níveis e cartões com elevação suave (*hover lift* de -2px).
+* **`editorial`:** Resumos de estudo diagramados com entrelinha otimizada para leitura técnica contínua (1.65) e blocos de citação destacados.
+* **`mono`:** Pílulas técnicas de atalho de teclado (`<kbd>`) diretamente na barra de avaliação SM-2 (`[1]`, `[2]`, `[3]`, `[4]` e `[Espaço]`).
+* **Ergonomia Obsidian & AnkiWeb:** Modo Claro neutro e Modo Escuro em cinza grafite/carvão (`#18181b` e `#222226`) sem reflexos ou cores fluorescentes, com zero emojis (100% ícones SVG customizados).
+
+## Entregáveis da Iteração 1 (Fase de Construção)
+
+* 📄 **`StudyAI_Guia_do_Usuario_e_Entrega.pdf`**: Documento consolidado contendo o Guia do Usuário, Diagrama de Implantação e Roteiro de Vídeo.
+* 📝 **`GUIA_DO_USUARIO.md`**: Manual operacional passo a passo e script cronometrado minuto a minuto (00:00 a 08:00) para o vídeo de demonstração.
+* 🖼️ **`diagrama_implantacao_simples.svg`**: Diagrama de Implantação conceitual em UML 2.5 (4 nós principais e protocolos).
+* 🖼️ **`diagrama_implantacao_iteracao1.svg`**: Diagrama de Implantação técnico expandido com contêineres e volumes Docker.
+* 📋 **`DOCUMENTO_IMPLANTACAO_ITERACAO1.md`**: Especificação arquitetural formal com códigos-fonte PlantUML e Mermaid.
+
 ## Estrutura
 
 ```
