@@ -245,6 +245,35 @@ p {
   font-weight: 800;
 }
 
+.brand-version-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  margin-left: 6px;
+  letter-spacing: 0.02em;
+}
+
+.section-pill {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-bottom: 0.35rem;
+}
+
 .brand-mark {
   display: inline-grid;
   place-items: center;

@@ -28,6 +28,7 @@ export function Layout() {
             <span className="brand-name">
               Study<strong>AI</strong>
             </span>
+            <span className="brand-version-badge">v1.1</span>
           </Link>
 
           <nav className="nav">

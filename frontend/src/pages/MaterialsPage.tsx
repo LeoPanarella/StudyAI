@@ -62,8 +62,9 @@ export function MaterialsPage() {
     <>
       <div className="page-header">
         <div>
+          <span className="section-pill">Acervo Acadêmico</span>
           <h1>Meus materiais</h1>
-          <p className="muted">Envie PDFs de apostilas, artigos ou anotações para estudar com IA.</p>
+          <p className="muted">Envie PDFs de apostilas, artigos ou anotações para estudar com IA e repetição espaçada.</p>
         </div>
         {!showUpload && (
           <button className="btn btn-primary" onClick={() => setShowUpload(true)}>
