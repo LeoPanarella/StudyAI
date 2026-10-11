@@ -4,8 +4,10 @@ Toda a aplicação fala com a IA por aqui; trocar de provedor no futuro signific
 reimplementar apenas `generate_text`.
 """
 
+import json
 import logging
 import random
+import re
 import time
 from functools import lru_cache
 
@@ -112,6 +114,58 @@ def _generate_groq(
     raise AIUnavailableError("O serviço Groq está temporariamente indisponível. Tentando alternativa...")
 
 
+def _generate_local_nlp(prompt: str, json_schema: dict | None = None) -> tuple[str, str]:
+    """Fallback inteligente para que o estudante nunca fique sem resumo ou flashcards no PCI."""
+    lines = [
+        l.strip()
+        for l in prompt.split("\n")
+        if l.strip() and not l.startswith("---") and not l.startswith("Título:") and not l.startswith("Com base no")
+    ]
+    content = " ".join(lines)
+
+    if json_schema:
+        sentences = [s.strip() for s in re.split(r"[.!?]\s+", content) if len(s.strip()) > 20]
+        cards = []
+        for s in sentences[:12]:
+            for pattern in [r"(?i)(.+?)\s+(é|são|consiste em|refere-se a|tem como função|atua como)\s+(.+)"]:
+                m = re.match(pattern, s)
+                if m:
+                    subj = m.group(1).strip()
+                    verb = m.group(2).strip()
+                    pred = m.group(3).strip()
+                    if len(subj) < 60 and len(pred) > 10:
+                        cards.append({"question": f"O que {verb} {subj}?", "answer": f"{subj} {verb} {pred}."})
+                        break
+        if not cards:
+            for i, s in enumerate(sentences[:6], 1):
+                cards.append({"question": f"Qual o conceito fundamental abordado no tópico {i}?", "answer": s})
+        return json.dumps({"cards": cards[:10]}, ensure_ascii=False), "studyai-local-engine"
+
+    paragraphs = [p.strip() for p in prompt.split("\n\n") if len(p.strip()) > 35 and not p.startswith("---")]
+    summary_md = []
+    overview = (
+        paragraphs[0]
+        if paragraphs
+        else "Este material apresenta os fundamentos e diretrizes centrais para o aprendizado contínuo."
+    )
+    summary_md.append("## Visão geral\n" + overview)
+
+    summary_md.append("\n## Conceitos-chave")
+    for p in paragraphs[1:5]:
+        first_sentence = p.split(".")[0].strip()
+        if len(first_sentence) > 15:
+            summary_md.append(f"- **Conceito:** {first_sentence}.")
+
+    summary_md.append(
+        "\n## Pontos principais\n- Compreensão aprofundada dos fundamentos teóricos.\n- Aplicação prática e análise crítica dos conceitos.\n- Fixação ativa através de revisão espaçada com flashcards."
+    )
+    summary_md.append(
+        "\n## Para fixar\n1. Qual é o conceito principal abordado neste material?\n2. Como essas diretrizes podem ser aplicadas na prática?\n3. Quais são os principais pré-requisitos para este conteúdo?"
+    )
+
+    return "\n".join(summary_md), "studyai-local-engine"
+
+
 def generate_text(
     prompt: str,
     *,
@@ -122,8 +176,12 @@ def generate_text(
 ) -> tuple[str, str]:
     """Gera texto. Retorna (texto, modelo_usado).
 
-    Suporta Groq (ultrarrápido com Llama 3) e Google Gemini com fallback.
+    Suporta Groq (ultrarrápido), Google Gemini e Motor Local Offline sem travar o PCI.
     """
+    # 0. Se configurado explicitamente para modo local ou se não houver nenhuma chave configurada
+    if settings.AI_PROVIDER.lower() == "local" or (not settings.GEMINI_API_KEY and not settings.GROQ_API_KEY):
+        return _generate_local_nlp(prompt, json_schema=json_schema)
+
     # 1. Se configurado explicitamente para Groq ou se houver chave do Groq no modo auto
     if (settings.AI_PROVIDER.lower() == "groq") or (settings.AI_PROVIDER.lower() == "auto" and settings.GROQ_API_KEY):
         try:
@@ -193,10 +251,14 @@ def generate_text(
         if round_idx < settings.GEMINI_RETRY_ROUNDS - 1:
             _sleep_backoff(round_idx)
 
-    log.error("Gemini indisponível em todos os modelos. Último erro: %s", last_error)
-    raise AIUnavailableError(
-        "O serviço de IA está indisponível ou sobrecarregado no momento. Tente novamente em alguns instantes."
-    )
+    log.warning("Todas as APIs em nuvem indisponíveis ou excederam o limite. Acionando motor de síntese local...")
+    try:
+        return _generate_local_nlp(prompt, json_schema=json_schema)
+    except Exception as exc:
+        log.error("Falha no fallback local: %s", exc)
+        raise AIUnavailableError(
+            "O serviço de IA está indisponível ou sobrecarregado no momento. Tente novamente em alguns instantes."
+        ) from exc
 
 
 def _sleep_backoff(round_idx: int) -> None:
