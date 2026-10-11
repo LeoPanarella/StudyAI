@@ -284,7 +284,7 @@ export function MaterialDetailPage() {
 
       {/* Conteúdo da Aba Conexões de Estudo (Obsidian-style) */}
       {activeTab === 'connections' && (
-        <ConnectionsSection materialId={material.id} />
+        <ConnectionsSection materialId={material.id} materialTitle={material.title} />
       )}
 
       {/* Conteúdo da Aba Texto Original */}

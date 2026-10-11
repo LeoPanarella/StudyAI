@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict wYJOLLgfIVsUlErK2baArrG0Vh4K28GYZzfuOcDprjq3FC5p4EjGN83pL1cOxi3
+\restrict W8akcORvoEDCLwvK6n5haNQgU64VBxB62NGZQhuiiRYNfMgZ9qwYrwuhdSIgUMz
 
 -- Dumped from database version 17.11 (Debian 17.11-0+deb13u1)
 -- Dumped by pg_dump version 17.11 (Debian 17.11-0+deb13u1)
@@ -117,6 +117,45 @@ ALTER SEQUENCE public.flashcards_id_seq OWNER TO studyai;
 --
 
 ALTER SEQUENCE public.flashcards_id_seq OWNED BY public.flashcards.id;
+
+
+--
+-- Name: material_connections; Type: TABLE; Schema: public; Owner: studyai
+--
+
+CREATE TABLE public.material_connections (
+    id integer NOT NULL,
+    source_material_id integer NOT NULL,
+    target_material_id integer NOT NULL,
+    relation_type character varying(30) DEFAULT 'related'::character varying NOT NULL,
+    note text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_connection_different CHECK ((source_material_id <> target_material_id))
+);
+
+
+ALTER TABLE public.material_connections OWNER TO studyai;
+
+--
+-- Name: material_connections_id_seq; Type: SEQUENCE; Schema: public; Owner: studyai
+--
+
+CREATE SEQUENCE public.material_connections_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.material_connections_id_seq OWNER TO studyai;
+
+--
+-- Name: material_connections_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: studyai
+--
+
+ALTER SEQUENCE public.material_connections_id_seq OWNED BY public.material_connections.id;
 
 
 --
@@ -330,6 +369,13 @@ ALTER TABLE ONLY public.flashcards ALTER COLUMN id SET DEFAULT nextval('public.f
 
 
 --
+-- Name: material_connections id; Type: DEFAULT; Schema: public; Owner: studyai
+--
+
+ALTER TABLE ONLY public.material_connections ALTER COLUMN id SET DEFAULT nextval('public.material_connections_id_seq'::regclass);
+
+
+--
 -- Name: materials id; Type: DEFAULT; Schema: public; Owner: studyai
 --
 
@@ -389,6 +435,14 @@ ALTER TABLE ONLY public.flashcards
 
 
 --
+-- Name: material_connections material_connections_pkey; Type: CONSTRAINT; Schema: public; Owner: studyai
+--
+
+ALTER TABLE ONLY public.material_connections
+    ADD CONSTRAINT material_connections_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: materials materials_pkey; Type: CONSTRAINT; Schema: public; Owner: studyai
 --
 
@@ -429,6 +483,14 @@ ALTER TABLE ONLY public.summaries
 
 
 --
+-- Name: material_connections uq_material_connection; Type: CONSTRAINT; Schema: public; Owner: studyai
+--
+
+ALTER TABLE ONLY public.material_connections
+    ADD CONSTRAINT uq_material_connection UNIQUE (source_material_id, target_material_id);
+
+
+--
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: studyai
 --
 
@@ -448,6 +510,20 @@ CREATE INDEX ix_ai_jobs_material_id ON public.ai_jobs USING btree (material_id);
 --
 
 CREATE INDEX ix_flashcards_material_id ON public.flashcards USING btree (material_id);
+
+
+--
+-- Name: ix_material_connections_source; Type: INDEX; Schema: public; Owner: studyai
+--
+
+CREATE INDEX ix_material_connections_source ON public.material_connections USING btree (source_material_id);
+
+
+--
+-- Name: ix_material_connections_target; Type: INDEX; Schema: public; Owner: studyai
+--
+
+CREATE INDEX ix_material_connections_target ON public.material_connections USING btree (target_material_id);
 
 
 --
@@ -492,6 +568,22 @@ ALTER TABLE ONLY public.ai_jobs
 
 ALTER TABLE ONLY public.flashcards
     ADD CONSTRAINT flashcards_material_id_fkey FOREIGN KEY (material_id) REFERENCES public.materials(id) ON DELETE CASCADE;
+
+
+--
+-- Name: material_connections material_connections_source_material_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: studyai
+--
+
+ALTER TABLE ONLY public.material_connections
+    ADD CONSTRAINT material_connections_source_material_id_fkey FOREIGN KEY (source_material_id) REFERENCES public.materials(id) ON DELETE CASCADE;
+
+
+--
+-- Name: material_connections material_connections_target_material_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: studyai
+--
+
+ALTER TABLE ONLY public.material_connections
+    ADD CONSTRAINT material_connections_target_material_id_fkey FOREIGN KEY (target_material_id) REFERENCES public.materials(id) ON DELETE CASCADE;
 
 
 --
@@ -545,5 +637,5 @@ GRANT ALL ON SCHEMA public TO studyai;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict wYJOLLgfIVsUlErK2baArrG0Vh4K28GYZzfuOcDprjq3FC5p4EjGN83pL1cOxi3
+\unrestrict W8akcORvoEDCLwvK6n5haNQgU64VBxB62NGZQhuiiRYNfMgZ9qwYrwuhdSIgUMz
 

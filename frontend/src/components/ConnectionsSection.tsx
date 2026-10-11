@@ -2,13 +2,16 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
   connectionsApi,
+  type GlobalGraphResponse,
   type MaterialConnectionsResponse,
 } from '../api/client'
 import { Alert } from './Alert'
+import { GraphCanvas, type GraphEdgeData, type GraphNodeData } from './GraphCanvas'
 import { IconConnections, IconLink, IconPlus, IconTrash } from './Icons'
 
 interface ConnectionsSectionProps {
   materialId: number
+  materialTitle?: string
 }
 
 const RELATION_LABELS: Record<string, { label: string; badgeClass: string; desc: string }> = {
@@ -34,10 +37,13 @@ const RELATION_LABELS: Record<string, { label: string; badgeClass: string; desc:
   },
 }
 
-export function ConnectionsSection({ materialId }: ConnectionsSectionProps) {
+export function ConnectionsSection({ materialId, materialTitle = 'Material Atual' }: ConnectionsSectionProps) {
   const [data, setData] = useState<MaterialConnectionsResponse | null>(null)
+  const [globalGraph, setGlobalGraph] = useState<GlobalGraphResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isGlobalView, setIsGlobalView] = useState(false)
+  const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph')
 
   // Formulário de nova conexão
   const [showForm, setShowForm] = useState(false)
@@ -48,8 +54,13 @@ export function ConnectionsSection({ materialId }: ConnectionsSectionProps) {
 
   async function load() {
     try {
-      const res = await connectionsApi.get(materialId)
+      const [res, graphRes] = await Promise.all([
+        connectionsApi.get(materialId),
+        connectionsApi.getGraph().catch(() => null),
+      ])
       setData(res)
+      if (graphRes) setGlobalGraph(graphRes)
+
       if (res.available_targets.length > 0 && targetId === '') {
         setTargetId(res.available_targets[0].id)
       }
@@ -91,38 +102,167 @@ export function ConnectionsSection({ materialId }: ConnectionsSectionProps) {
     }
   }
 
+  // Prepara os dados para o Grafo Visual
+  let graphNodes: GraphNodeData[] = []
+  let graphEdges: GraphEdgeData[] = []
+
+  if (isGlobalView && globalGraph) {
+    // Modo Global: Todos os materiais e todas as conexões
+    graphNodes = globalGraph.nodes.map((n) => ({
+      id: n.id,
+      title: n.title,
+      filename: n.filename,
+      charCount: n.char_count,
+      flashcardCount: n.flashcard_count,
+      hasSummary: n.has_summary,
+      isCenter: n.id === materialId,
+    }))
+
+    graphEdges = globalGraph.edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      relationType: e.relation_type,
+      note: e.note,
+    }))
+  } else if (data) {
+    // Modo Local: Este material no centro + seus vínculos e materiais do acervo
+    const nodeMap = new Map<number, GraphNodeData>()
+
+    // Nó central
+    nodeMap.set(materialId, {
+      id: materialId,
+      title: materialTitle,
+      isCenter: true,
+    })
+
+    // Conexões de saída
+    data.outgoing.forEach((c) => {
+      nodeMap.set(c.target_material_id, {
+        id: c.target_material_id,
+        title: c.target_material_title,
+        filename: c.target_material_filename,
+        relationType: c.relation_type,
+        note: c.note,
+      })
+      graphEdges.push({
+        id: c.id,
+        source: materialId,
+        target: c.target_material_id,
+        relationType: c.relation_type,
+        note: c.note,
+      })
+    })
+
+    // Backlinks (Conexões de entrada)
+    data.incoming.forEach((b) => {
+      nodeMap.set(b.source_material_id, {
+        id: b.source_material_id,
+        title: b.source_material_title,
+        filename: b.source_material_filename,
+        relationType: b.relation_type,
+        note: b.note,
+        isBacklink: true,
+      })
+      graphEdges.push({
+        id: b.id,
+        source: b.source_material_id,
+        target: materialId,
+        relationType: b.relation_type,
+        note: b.note,
+      })
+    })
+
+    // Outros materiais disponíveis no acervo como satélites
+    data.available_targets.forEach((t) => {
+      if (!nodeMap.has(t.id)) {
+        nodeMap.set(t.id, {
+          id: t.id,
+          title: t.title,
+          filename: t.filename,
+        })
+      }
+    })
+
+    graphNodes = Array.from(nodeMap.values())
+  }
+
   const hasOutgoing = Boolean(data && data.outgoing.length > 0)
   const hasIncoming = Boolean(data && data.incoming.length > 0)
   const totalConns = (data?.outgoing.length || 0) + (data?.incoming.length || 0)
 
   return (
     <div className="connections-section">
-      <div className="section-header-row">
+      {/* Cabeçalho da Seção */}
+      <div className="section-header-row" style={{ marginBottom: '1.2rem' }}>
         <div>
-          <h2>Conexões e Grafo de Conhecimento</h2>
-          <p className="muted">
-            Vincule materiais associativamente no estilo Obsidian (pré-requisitos, aprofundamentos e referências).
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <IconConnections size={22} color="var(--primary)" />
+            <h2 style={{ margin: 0 }}>Grafo de Conhecimento e Conexões</h2>
+          </div>
+          <p className="muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>
+            Mapa visual associativo estilo Obsidian: explore correlações, pré-requisitos e desdobramentos dos seus estudos.
           </p>
         </div>
 
-        {data && data.available_targets.length > 0 && !showForm && (
-          <button className="btn btn-outline" onClick={() => setShowForm(true)}>
-            <IconPlus size={15} /> Nova conexão
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Seletor de visualização (Grafo vs Lista) */}
+          <div className="view-mode-toggle" style={{ display: 'flex', background: 'var(--surface-muted)', borderRadius: '8px', padding: '3px', border: '1px solid var(--border)' }}>
+            <button
+              type="button"
+              onClick={() => setViewMode('graph')}
+              style={{
+                background: viewMode === 'graph' ? 'var(--surface)' : 'transparent',
+                color: viewMode === 'graph' ? 'var(--text)' : 'var(--text-muted)',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '5px 12px',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: viewMode === 'graph' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              }}
+            >
+              Grafo Visual
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              style={{
+                background: viewMode === 'list' ? 'var(--surface)' : 'transparent',
+                color: viewMode === 'list' ? 'var(--text)' : 'var(--text-muted)',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '5px 12px',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              }}
+            >
+              Lista ({totalConns})
+            </button>
+          </div>
+
+          {data && data.available_targets.length > 0 && !showForm && (
+            <button className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
+              <IconPlus size={15} /> Nova conexão
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <Alert>{error}</Alert>}
 
       {/* Formulário de Criação de Conexão */}
       {showForm && data && (
-        <form className="card manual-card-form" onSubmit={handleAdd}>
+        <form className="card manual-card-form" onSubmit={handleAdd} style={{ marginBottom: '1.25rem' }}>
           <div className="row" style={{ gap: '0.5rem', alignItems: 'center' }}>
             <IconConnections size={18} color="var(--primary)" />
             <h3 style={{ margin: 0 }}>Vincular outro material</h3>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginTop: '0.5rem' }}>
             <label>
               Material a conectar
               <select
@@ -154,17 +294,17 @@ export function ConnectionsSection({ materialId }: ConnectionsSectionProps) {
             </label>
           </div>
 
-          <label>
+          <label style={{ marginTop: '0.5rem' }}>
             Nota de conexão (opcional)
             <input
               type="text"
-              placeholder="Ex.: Necessário dominar a camada de transporte antes deste tópico de criptografia"
+              placeholder="Ex.: Necessário dominar este conceito antes do tópico de segurança avançada"
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
           </label>
 
-          <div className="row-end" style={{ gap: '0.5rem' }}>
+          <div className="row-end" style={{ gap: '0.5rem', marginTop: '0.75rem' }}>
             <button
               type="button"
               className="btn btn-ghost btn-sm"
@@ -174,88 +314,98 @@ export function ConnectionsSection({ materialId }: ConnectionsSectionProps) {
               Cancelar
             </button>
             <button className="btn btn-primary btn-sm" disabled={saving}>
-              {saving ? 'Conectando…' : 'Salvar conexão'}
+              {saving ? 'Conectando…' : 'Salvar conexão no grafo'}
             </button>
           </div>
         </form>
       )}
 
-      {loading && <p className="muted">Carregando conexões…</p>}
+      {loading && <p className="muted">Carregando grafo de conexões…</p>}
 
-      {!loading && totalConns === 0 && !showForm && (
-        <div className="empty-flashcards card">
-          <p>Nenhuma conexão registrada para este material ainda.</p>
-          <p className="muted" style={{ marginBottom: '1.25rem' }}>
-            {data && data.available_targets.length > 0
-              ? 'Conecte este estudo a outros PDFs da sua conta para criar um mapa de aprendizagem contínuo.'
-              : 'Envie outros PDFs na aba inicial para poder criar conexões entre eles.'}
-          </p>
-          {data && data.available_targets.length > 0 && (
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-              <IconPlus size={15} /> Conectar ao primeiro material
-            </button>
+      {/* Renderização do Grafo Visual Estilo Obsidian */}
+      {!loading && viewMode === 'graph' && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <GraphCanvas
+            currentMaterialId={materialId}
+            currentMaterialTitle={materialTitle}
+            nodes={graphNodes}
+            edges={graphEdges}
+            onAddConnectionClick={() => setShowForm(true)}
+            isGlobalView={isGlobalView}
+            onToggleViewMode={() => setIsGlobalView((prev) => !prev)}
+          />
+        </div>
+      )}
+
+      {/* Renderização da Lista de Detalhes (quando no modo Lista ou abaixo do Grafo) */}
+      {!loading && (viewMode === 'list' || totalConns > 0) && (
+        <div style={{ marginTop: viewMode === 'graph' ? '1rem' : '0' }}>
+          {viewMode === 'graph' && totalConns > 0 && (
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+              Vínculos Registrados ({totalConns})
+            </h3>
           )}
-        </div>
-      )}
 
-      {/* Conexões de Saída (Materiais que este material aponta) */}
-      {hasOutgoing && (
-        <div className="connections-group">
-          <h3 className="connections-subtitle">
-            <IconLink size={15} /> Materiais vinculados a partir deste
-          </h3>
-          <div className="connections-grid">
-            {data!.outgoing.map((c) => {
-              const meta = RELATION_LABELS[c.relation_type] || RELATION_LABELS.related
-              return (
-                <div key={c.id} className="card connection-item">
-                  <div className="connection-item-header">
-                    <span className={`badge ${meta.badgeClass}`}>{meta.label}</span>
-                    <button
-                      className="icon-btn-delete"
-                      onClick={() => handleDelete(c.id)}
-                      title="Remover conexão"
-                    >
-                      <IconTrash size={14} />
-                    </button>
-                  </div>
+          {/* Conexões de Saída */}
+          {hasOutgoing && (
+            <div className="connections-group" style={{ marginBottom: '1.25rem' }}>
+              <h4 className="connections-subtitle" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                <IconLink size={14} /> Materiais vinculados a partir deste
+              </h4>
+              <div className="connections-grid">
+                {data!.outgoing.map((c) => {
+                  const meta = RELATION_LABELS[c.relation_type] || RELATION_LABELS.related
+                  return (
+                    <div key={c.id} className="card connection-item">
+                      <div className="connection-item-header">
+                        <span className={`badge ${meta.badgeClass}`}>{meta.label}</span>
+                        <button
+                          className="icon-btn-delete"
+                          onClick={() => handleDelete(c.id)}
+                          title="Remover conexão"
+                        >
+                          <IconTrash size={14} />
+                        </button>
+                      </div>
 
-                  <Link to={`/materiais/${c.target_material_id}`} className="connection-title">
-                    {c.target_material_title}
-                  </Link>
+                      <Link to={`/materiais/${c.target_material_id}`} className="connection-title">
+                        {c.target_material_title}
+                      </Link>
 
-                  {c.note && <p className="connection-note muted">{c.note}</p>}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+                      {c.note && <p className="connection-note muted">{c.note}</p>}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
-      {/* Backlinks (Materiais que apontam para este) */}
-      {hasIncoming && (
-        <div className="connections-group">
-          <h3 className="connections-subtitle">
-            <IconConnections size={15} /> Backlinks (Materiais que referenciam este)
-          </h3>
-          <div className="connections-grid">
-            {data!.incoming.map((b) => {
-              const meta = RELATION_LABELS[b.relation_type] || RELATION_LABELS.related
-              return (
-                <div key={b.id} className="card connection-item backlink-item">
-                  <div className="connection-item-header">
-                    <span className={`badge ${meta.badgeClass}`}>{meta.label}</span>
-                  </div>
+          {/* Backlinks */}
+          {hasIncoming && (
+            <div className="connections-group">
+              <h4 className="connections-subtitle" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                <IconConnections size={14} /> Backlinks (Materiais que referenciam este)
+              </h4>
+              <div className="connections-grid">
+                {data!.incoming.map((b) => {
+                  const meta = RELATION_LABELS[b.relation_type] || RELATION_LABELS.related
+                  return (
+                    <div key={b.id} className="card connection-item backlink-item">
+                      <div className="connection-item-header">
+                        <span className={`badge ${meta.badgeClass}`}>{meta.label}</span>
+                      </div>
 
-                  <Link to={`/materiais/${b.source_material_id}`} className="connection-title">
-                    {b.source_material_title}
-                  </Link>
+                      <Link to={`/materiais/${b.source_material_id}`} className="connection-title">
+                        {b.source_material_title}
+                      </Link>
 
-                  {b.note && <p className="connection-note muted">{b.note}</p>}
-                </div>
-              )
-            })}
-          </div>
+                      {b.note && <p className="connection-note muted">{b.note}</p>}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

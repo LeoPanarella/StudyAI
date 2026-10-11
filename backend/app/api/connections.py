@@ -155,6 +155,50 @@ def create_connection(
     )
 
 
+@router.get("/connections/graph")
+def get_global_knowledge_graph(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    materials = db.scalars(
+        select(Material)
+        .where(Material.user_id == user.id)
+        .order_by(Material.id.asc())
+    ).all()
+
+    mat_ids = [m.id for m in materials]
+    connections = db.scalars(
+        select(MaterialConnection)
+        .where(
+            MaterialConnection.source_material_id.in_(mat_ids),
+            MaterialConnection.target_material_id.in_(mat_ids),
+        )
+    ).all() if mat_ids else []
+
+    nodes = [
+        {
+            "id": m.id,
+            "title": m.title,
+            "filename": m.filename,
+            "char_count": m.char_count,
+            "flashcard_count": len(m.flashcards),
+            "has_summary": bool(m.summary),
+        }
+        for m in materials
+    ]
+    edges = [
+        {
+            "id": c.id,
+            "source": c.source_material_id,
+            "target": c.target_material_id,
+            "relation_type": c.relation_type,
+            "note": c.note,
+        }
+        for c in connections
+    ]
+    return {"nodes": nodes, "edges": edges}
+
+
 @router.delete("/connections/{connection_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_connection(
     connection_id: int,

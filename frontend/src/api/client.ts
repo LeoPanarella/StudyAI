@@ -278,6 +278,28 @@ export interface AvailableTarget {
   filename: string
 }
 
+export interface GraphNode {
+  id: number
+  title: string
+  filename: string
+  char_count: number
+  flashcard_count: number
+  has_summary: boolean
+}
+
+export interface GraphEdge {
+  id: number
+  source: number
+  target: number
+  relation_type: string
+  note: string | null
+}
+
+export interface GlobalGraphResponse {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+}
+
 export interface MaterialConnectionsResponse {
   outgoing: ConnectionOut[]
   incoming: BacklinkOut[]
@@ -394,6 +416,7 @@ export const flashcardsApi = {
 
 export const connectionsApi = {
   get: (materialId: number) => api<MaterialConnectionsResponse>(`/api/materials/${materialId}/connections`),
+  getGraph: () => api<GlobalGraphResponse>('/api/connections/graph'),
   create: (materialId: number, targetMaterialId: number, relationType: string, note?: string) =>
     api<ConnectionOut>(`/api/materials/${materialId}/connections`, {
       method: 'POST',
