@@ -60,6 +60,58 @@ def _models_chain() -> list[str]:
     return [m for m in chain if m and not (m in seen or seen.add(m))]
 
 
+def _generate_groq(
+    prompt: str,
+    *,
+    system_instruction: str | None = None,
+    temperature: float = 0.3,
+    max_output_tokens: int = 4096,
+    json_schema: dict | None = None,
+) -> tuple[str, str]:
+    """Chama a API ultrarrápida do Groq (OpenAI-compatible) via LPU."""
+    if not settings.GROQ_API_KEY:
+        raise AINotConfiguredError("Chave do Groq não configurada (defina GROQ_API_KEY no servidor).")
+
+    headers = {
+        "Authorization": f"Bearer {settings.GROQ_API_KEY.strip()}",
+        "Content-Type": "application/json",
+    }
+    messages = []
+    if system_instruction:
+        messages.append({"role": "system", "content": system_instruction})
+    messages.append({"role": "user", "content": prompt})
+
+    models_to_try = [settings.GROQ_MODEL or "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+    with httpx.Client(timeout=settings.GEMINI_TIMEOUT_SECONDS) as client:
+        for model in models_to_try:
+            body: dict = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_output_tokens,
+            }
+            if json_schema:
+                body["response_format"] = {"type": "json_object"}
+            try:
+                resp = client.post("https://api.groq.com/openai/v1/chat/completions", json=body, headers=headers)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    content = data["choices"][0]["message"]["content"]
+                    log.info("Groq ok com modelo: %s", model)
+                    return content.strip(), model
+                elif resp.status_code in (401, 403):
+                    raise AIError("A chave da API do Groq (GROQ_API_KEY) foi recusada.", 502)
+                else:
+                    log.warning("Groq status %d no modelo %s: %s", resp.status_code, model, resp.text)
+            except AIError:
+                raise
+            except Exception as e:
+                log.warning("Falha de conexão com Groq (%s): %s", model, e)
+                continue
+
+    raise AIUnavailableError("O serviço Groq está temporariamente indisponível. Tentando alternativa...")
+
+
 def generate_text(
     prompt: str,
     *,
@@ -70,14 +122,24 @@ def generate_text(
 ) -> tuple[str, str]:
     """Gera texto. Retorna (texto, modelo_usado).
 
-    Estratégia de resiliência (o tier gratuito do Gemini oscila bastante):
-    - Round-robin: tenta o modelo principal, depois cada fallback; se todos falharem,
-      espera com backoff crescente e repete a rodada. Assim atravessamos rajadas de 503
-      em vez de bater várias vezes seguidas no mesmo modelo indisponível.
-    - 429 (cota por minuto esgotada) → pula imediatamente para o próximo modelo, que tem cota própria.
-    - 400/404 → modelo inválido/sem acesso: descartado pelo resto da chamada.
-    - 401/403 → chave inválida: erro imediato (não adianta insistir).
+    Suporta Groq (ultrarrápido com Llama 3) e Google Gemini com fallback.
     """
+    # 1. Se configurado explicitamente para Groq ou se houver chave do Groq no modo auto
+    if (settings.AI_PROVIDER.lower() == "groq") or (settings.AI_PROVIDER.lower() == "auto" and settings.GROQ_API_KEY):
+        try:
+            return _generate_groq(
+                prompt,
+                system_instruction=system_instruction,
+                temperature=temperature,
+                max_output_tokens=min(max_output_tokens, 4096),
+                json_schema=json_schema,
+            )
+        except AIError as exc:
+            if settings.AI_PROVIDER.lower() == "groq" or not settings.GEMINI_API_KEY:
+                raise exc
+            log.info("Groq falhou ou atingiu limite, fazendo fallback transparente para Gemini...")
+
+    # 2. Execução padrão com Google Gemini
     client = _client()
     config = types.GenerateContentConfig(
         system_instruction=system_instruction,
