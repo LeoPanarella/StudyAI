@@ -1,3 +1,8 @@
+// ============================================================================
+// StudyAI — Seção de Conexões e Grafo de Estudo (PCI)
+// Gerencia a criação, visualização e remoção de vínculos conceituais entre PDFs.
+// ============================================================================
+
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {

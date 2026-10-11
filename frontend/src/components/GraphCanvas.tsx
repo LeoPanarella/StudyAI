@@ -1,3 +1,14 @@
+// ============================================================================
+// StudyAI — Visualização em Grafo de Conhecimento (PCI)
+// Autor: Leo Panarella
+//
+// Componente de grafo interativo inspirado no Obsidian.
+// Implementado em HTML5 Canvas nativo com simulação de física de partículas:
+// 1. Repulsão entre nós (para evitar sobreposição)
+// 2. Força elástica nas conexões (atrai materiais relacionados)
+// 3. Gravidade central e fricção (para manter o grafo estável no centro)
+// ============================================================================
+
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 

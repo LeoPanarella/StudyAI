@@ -1,151 +1,182 @@
-# StudyAI
+# StudyAI — Plataforma Inteligente de Apoio aos Estudos
 
-Sistema web de estudos com IA: upload de PDFs, extração de texto, resumos, flashcards
-de revisão espaçada, tutor de IA contextualizado e plano de estudos.
+> **Projeto de Conclusão Integrado (PCI)**  
+> **Autor:** Leo Panarella  
+> **Tecnologias:** Python (FastAPI), React (Vite + TypeScript), PostgreSQL, Google Gemini API, Docker  
 
-**Stack:** Python 3.13 · FastAPI · SQLAlchemy 2 · Alembic · PostgreSQL 17 · PyMuPDF · React 18 + Vite + TypeScript · Google Gemini (fases 3–5)
+---
 
-## Estado do projeto
+## 📌 Sobre o Projeto
 
-| # | Funcionalidade | Status |
-|---|----------------|--------|
-| 1 | Cadastro e login (JWT Bearer + cookie httpOnly, senha com bcrypt) | Concluído |
-| 2 | Upload de PDF + extração de texto (PyMuPDF), persistido no PostgreSQL | Concluído |
-| 3 | Resumo via IA (Gemini), gerado em segundo plano com retry/fallback | Concluído |
-| 4 | Flashcards via IA + revisão espaçada (SM-2, virar cartão 3D, 4 notas) | Concluído |
-| 4.5 | Conexões de Estudo bidirecionais (estilo Obsidian) + Geração de Flashcards com foco temático | Concluído |
-| 5 | Tutor de IA (chat com contexto do material) | Próxima etapa |
-| 6 | Plano de estudos (CRUD) | Em planejamento |
+Durante a faculdade e rotinas intensas de estudo, é muito comum acumularmos dezenas de livros e apostilas em formato PDF que acabam esquecidos em pastas do computador. O **StudyAI** nasceu como meu Projeto de Conclusão Integrado com o objetivo de transformar esse material passivo em um ambiente de aprendizagem ativa e contínua.
 
-## Design System & Identidade Visual UI/UX
+A plataforma resolve três grandes dores do estudante:
+1. **Dificuldade em sintetizar conteúdos longos:** A plataforma processa o PDF e gera resumos estruturados com Inteligência Artificial (visão geral, conceitos-chave, tópicos práticos e perguntas de fixação).
+2. **Curva do esquecimento:** Transforma o material em flashcards inteligentes utilizando o algoritmo **SuperMemo SM-2** (mesmo algoritmo do Anki), agendando revisões periódicas com base no nível de dificuldade que o aluno sentiu.
+3. **Falta de visão associativa dos conteúdos:** Apresenta um **Grafo de Conhecimento Interativo** inspirado no Obsidian, permitindo conectar materiais correlatos, pré-requisitos e desdobramentos de estudo em um mapa visual navegável.
 
-A interface visual do StudyAI foi estruturada e aprimorada seguindo os padrões do repositório **[`bergside/awesome-design-skills`](https://github.com/bergside/awesome-design-skills)** (especificações em `design-system/`):
+---
 
-* **`minimal` & `clean`:** Hierarquia clara com escala modular (4/8/12/16/24/32px), ausência de poluição visual e contraste WCAG AA.
-* **`shadcn`:** Micro-interações táteis nos botões (`active: scale(0.985)`), anéis de foco acessíveis (`focus-visible`) e consistência de estados.
-* **`sleek` & `refined`:** Barra de navegação com *glassmorphism* sutil (`backdrop-filter: blur(12px)`), sombras multicamadas em 5 níveis e cartões com elevação suave (*hover lift* de -2px).
-* **`editorial`:** Resumos de estudo diagramados com entrelinha otimizada para leitura técnica contínua (1.65) e blocos de citação destacados.
-* **`mono`:** Pílulas técnicas de atalho de teclado (`<kbd>`) diretamente na barra de avaliação SM-2 (`[1]`, `[2]`, `[3]`, `[4]` e `[Espaço]`).
-* **Ergonomia Obsidian & AnkiWeb:** Modo Claro neutro e Modo Escuro em cinza grafite/carvão (`#18181b` e `#222226`) sem reflexos ou cores fluorescentes, com zero emojis (100% ícones SVG customizados).
+## 🚀 Funcionalidades Principais
 
-## Entregáveis da Iteração 1 (Fase de Construção)
+- **Autenticação Segura de Usuários:** Cadastro e login com senhas criptografadas usando `bcrypt` e tokens JWT (Bearer + Cookie `httpOnly`). Cada aluno enxerga apenas seus próprios materiais.
+- **Upload e Extração de Documentos:** Envio de PDFs de até 25 MB com extração de texto puro via biblioteca `PyMuPDF` (execução local sem depender de OCR externo).
+- **Resumos Inteligentes:** Geração de sínteses didáticas via Google Gemini com modelo de alta performance (`gemini-3.5-flash-lite`) e processamento assíncrono em segundo plano para não travar o navegador.
+- **Flashcards com Repetição Espaçada (SM-2):** 
+  - Cartões interativos com efeito 3D de virada (pergunta/resposta).
+  - 4 botões de avaliação: *Errei (1)*, *Difícil (2)*, *Bom (3)* e *Fácil (4)* com suporte a atalhos de teclado.
+  - Recálculo matemático em tempo real do intervalo de dias e fator de facilidade (*Ease Factor*).
+- **Grafo de Conhecimento Interativo (Estilo Obsidian):**
+  - Renderizado em **HTML5 Canvas nativo** (60 FPS, sem bibliotecas pesadas).
+  - Simulação de forças elásticas: repulsão entre nós, atração por conexões e gravidade central.
+  - Suporte completo a **arrastar e soltar (drag & drop)**, zoom com roda do mouse e navegação direta ao clicar no nó.
+  - Modos duplo: *Grafo Local* (focado no material aberto) e *Grafo Global* (todo o acervo conectado).
 
-* 📄 **`StudyAI_Guia_do_Usuario_e_Entrega.pdf`**: Documento consolidado contendo o Guia do Usuário, Diagrama de Implantação e Roteiro de Vídeo.
-* 📝 **`GUIA_DO_USUARIO.md`**: Manual operacional passo a passo e script cronometrado minuto a minuto (00:00 a 08:00) para o vídeo de demonstração.
-* 🖼️ **`diagrama_implantacao_simples.svg`**: Diagrama de Implantação conceitual em UML 2.5 (4 nós principais e protocolos).
-* 🖼️ **`diagrama_implantacao_iteracao1.svg`**: Diagrama de Implantação técnico expandido com contêineres e volumes Docker.
-* 📋 **`DOCUMENTO_IMPLANTACAO_ITERACAO1.md`**: Especificação arquitetural formal com códigos-fonte PlantUML e Mermaid.
+---
 
-## Estrutura
+## 🛠️ Tecnologias Utilizadas
 
-```
-studyai/
-├── backend/               # API FastAPI
-│   ├── app/
-│   │   ├── api/           # rotas: auth, materials (+ deps de autenticação)
-│   │   ├── core/          # config (env) e segurança (bcrypt, JWT)
-│   │   ├── db/            # engine/sessão SQLAlchemy
-│   │   ├── models/        # User, Material, Summary, Flashcard, StudyPlan(+Item)
-│   │   ├── schemas/       # modelos Pydantic de entrada/saída
-│   │   └── services/      # pdf_extractor (PyMuPDF), jobs (execução em 2º plano), ai/ (gemini, summarizer)
-│   ├── alembic/versions/  # migrações versionadas do banco
-│   ├── uploads/           # PDFs originais (uploads/<user_id>/<uuid>.pdf) — fora do git
-│   └── .env               # DATABASE_URL, SECRET_KEY, GEMINI_API_KEY...
-├── frontend/              # React + Vite (proxy /api -> :8000 em dev)
-├── db/schema.sql          # schema de referência gerado do banco (para revisão/DBA)
-├── samples/               # PDF de exemplo para testes
-└── scripts/               # setup_db.sh, dev.sh, db_dump.sh
-```
+### Backend
+- **Python 3.13** com **FastAPI:** Framework web assíncrono, moderno e com validação tipada automática.
+- **PostgreSQL 17:** Banco de dados relacional robusto com chave estrangeira em cascata e índices otimizados.
+- **SQLAlchemy 2.0 & Alembic:** ORM para manipulação das tabelas e migrações versionadas do banco.
+- **PyMuPDF (`fitz`):** Leitura de baixo nível e extração de texto direto dos arquivos PDF.
+- **Google GenAI SDK:** Integração oficial com os modelos Gemini (`gemini-3.5-flash-lite` e cadeia de fallback).
+- **Uvicorn:** Servidor ASGI para produção.
 
-## Rodando
+### Frontend
+- **React 18** com **Vite:** Build rápido e experiência de desenvolvimento ágil.
+- **TypeScript:** Tipagem estática em 100% dos componentes e chamadas de API.
+- **React Router 6:** Roteamento dinâmico SPA (Single Page Application).
+- **React Markdown & Remark GFM:** Renderização formatada de resumos acadêmicos, tabelas e listas.
+- **CSS3 Puro:** Estilização modular com variáveis CSS, sem excesso de frameworks genéricos.
+
+---
+
+## 🎨 Decisões de Design e Interface (UI/UX)
+
+Para a interface, evitei templates genéricos cheios de cores fluorescentes ou emojis infantis. A inspiração visual veio diretamente de duas ferramentas consagradas de estudo e produtividade:
+- **Obsidian:** Tema escuro confortável em tons de grafite e carvão (`#14161f` e `#1e2029`), focado em leitura prolongada sem fadiga visual.
+- **AnkiWeb:** Cartões de estudo limpos com divisórias nítidas, tipografia legível e feedback claro de repetição espaçada.
+
+---
+
+## ⚙️ Como Rodar o Projeto Localmente
+
+### Pré-requisitos
+- Python 3.11+ instalado
+- Node.js 18+ instalado
+- PostgreSQL rodando localmente (ou via Docker)
+
+### Opção 1: Via Docker Compose (Mais Fácil)
+Se você tiver o Docker instalado, pode subir o sistema completo com um único comando:
 
 ```bash
-# 1) Banco: crie um PostgreSQL e um banco vazio do seu jeito. Para dev local, há um atalho:
-./scripts/setup_db.sh
+# Na raiz do projeto:
+docker compose up --build
+```
+Acesse a aplicação pronta em: `http://localhost:3000`
 
-# 2) Backend
+---
+
+### Opção 2: Rodando Manualmente em Desenvolvimento
+
+#### 1. Configurando o Banco de Dados (PostgreSQL)
+Crie um banco de dados chamado `studyai` no seu PostgreSQL local.
+
+#### 2. Configurando o Backend
+```bash
 cd backend
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-cp .env.example .env           # edite DATABASE_URL e SECRET_KEY
-.venv/bin/alembic upgrade head # cria as tabelas
-.venv/bin/uvicorn app.main:app --reload --port 8000
 
-# 3) Frontend
+# Crie e ative o ambiente virtual
+python3 -m venv .venv
+source .venv/bin/activate  # No Windows: .venv\Scripts\activate
+
+# Instale as dependências
+pip install -r requirements.txt
+
+# Crie o arquivo de variáveis de ambiente
+cp .env.example .env
+
+# Execute as migrações para criar as tabelas no banco
+alembic upgrade head
+
+# Inicie o servidor FastAPI
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+A documentação interativa Swagger ficará acessível em: `http://localhost:8000/api/docs`
+
+#### 3. Configurando o Frontend
+Em outro terminal:
+```bash
 cd frontend
+
+# Instale os pacotes npm
 npm install
-npm run dev                    # http://localhost:5173  (proxy /api -> 8000)
+
+# Inicie o servidor Vite
+npm run dev
+```
+Abra no navegador em: `http://localhost:5173`
+
+---
+
+## 🔑 Variáveis de Ambiente (`backend/.env`)
+
+| Variável | Descrição | Exemplo |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | String de conexão do PostgreSQL | `postgresql+psycopg://usuario:senha@localhost:5432/studyai` |
+| `SECRET_KEY` | Chave para assinar os tokens JWT | `uma-chave-secreta-bem-longa-aqui` |
+| `GEMINI_API_KEY` | Chave da API gratuita do Google Gemini | Obter em [aistudio.google.com](https://aistudio.google.com) |
+| `GEMINI_MODEL` | Modelo padrão de IA | `gemini-3.5-flash-lite` |
+| `ENV` | Ambiente de execução | `development` ou `production` |
+
+---
+
+## 📁 Estrutura de Pastas do Projeto
+
+```text
+studyai/
+├── backend/
+│   ├── alembic/              # Scripts versionados de migração do banco
+│   ├── app/
+│   │   ├── api/              # Rotas da API (auth, materials, flashcards, connections)
+│   │   ├── core/             # Configurações (env), segurança (JWT/bcrypt) e rate limits
+│   │   ├── db/               # Conexão com banco e sessão SQLAlchemy
+│   │   ├── models/           # Entidades do banco de dados (ORM)
+│   │   ├── schemas/          # Validações de entrada/saída com Pydantic
+│   │   └── services/         # Lógica de negócio: extração de PDF, integração Gemini e algoritmo SM-2
+│   ├── uploads/              # Armazenamento local dos PDFs dos alunos
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── api/              # Cliente HTTP e tipagens TypeScript
+│   │   ├── auth/             # Contexto de autenticação e proteção de rotas
+│   │   ├── components/       # Componentes reutilizáveis (GraphCanvas, Flashcards, Alertas, Ícones)
+│   │   └── pages/            # Telas da aplicação (Login, Meus Materiais, Detalhe do Estudo)
+│   ├── index.html
+│   └── package.json
+├── db/                       # Dump de referência do schema SQL
+├── docker-compose.yml        # Orquestração para deploy e testes locais
+├── render.yaml               # Configuração para deploy do backend no Render
+└── vercel.json               # Configuração para deploy do frontend na Vercel
 ```
 
-Docs interativas da API: `http://localhost:8000/api/docs`
+---
 
-## API (fase atual)
+## 🧠 Aprendizados e Desafios Superados no PCI
 
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST | `/api/auth/register` | cria conta e inicia sessão |
-| POST | `/api/auth/login` | inicia sessão (cookie httpOnly) |
-| POST | `/api/auth/logout` | encerra sessão |
-| GET | `/api/auth/me` | usuário logado |
-| GET | `/api/materials` | lista materiais do usuário |
-| POST | `/api/materials` | upload (multipart `file`, `title` opcional) → extrai texto |
-| GET | `/api/materials/{id}` | detalhe + prévia do texto |
-| GET | `/api/materials/{id}/content` | texto extraído completo |
-| POST | `/api/materials/{id}/summary` | enfileira geração do resumo (202 + job); acompanhe em `summary_job` do detalhe |
-| GET | `/api/materials/{id}/summary` | resumo atual (404 se ainda não houver) |
-| GET | `/api/materials/{id}/flashcards` | lista flashcards do material (total, pendentes de revisão hoje) |
-| POST | `/api/materials/{id}/flashcards` | cria flashcard manual ({question, answer}) |
-| POST | `/api/materials/{id}/flashcards/generate` | enfileira geração com IA (aceita `{ "focus": "..." }`) |
-| GET | `/api/materials/{id}/flashcards/study` | cartões para sessão de estudo (?mode=due\|all) |
-| POST | `/api/flashcards/{id}/review` | submete nota de revisão ({rating: 0..3}) e recalcula SM-2 |
-| PATCH | `/api/flashcards/{id}` | edita pergunta ou resposta |
-| DELETE | `/api/flashcards/{id}` | exclui flashcard |
-| GET | `/api/materials/{id}/connections` | lista materiais conectados (saída) e backlinks (entrada) |
-| POST | `/api/materials/{id}/connections` | conecta a outro material ({target_material_id, relation_type, note}) |
-| DELETE | `/api/connections/{id}` | remove conexão bidirecional |
-| PATCH | `/api/materials/{id}` | renomear |
-| DELETE | `/api/materials/{id}` | excluir (cascata em resumo/flashcards + arquivo) |
+1. **Tratamento de Rate-Limit e Resiliência com a API do Gemini:**  
+   No plano gratuito, a API do Google ocasionalmente retorna códigos como `429 (Too Many Requests)` ou `503 (Model Unavailable)`. Para contornar isso, criei uma rotina de retry com modelo de fallback automático: se o modelo principal oscilar, o backend tenta automaticamente o modelo secundário sem frustrar o usuário.
+2. **Implementação Real do Algoritmo SM-2:**  
+   Em vez de apenas sortear flashcards, estudei a fórmula matemática original do SuperMemo-2 criada por Piotr Woźniak. O cálculo leva em conta as repetições consecutivas, a nota de 1 a 4 informada pelo aluno e o fator de facilidade (mínimo de 1.3), gerando intervalos reais em dias.
+3. **Desenvolvimento do Grafo Interativo com HTML5 Canvas Puro:**  
+   Para evitar bibliotecas externas pesadas e dependências que quebrassem em navegadores diferentes, implementei a física do grafo manualmente usando o loop `requestAnimationFrame`. As leis de Hooke (molas) e repulsão eletrostática simples garantem que os nós se organizem de forma orgânica e fluida na tela.
 
-## Como a IA funciona (fases 3 e 4)
+---
 
-- **Camada isolada** em `app/services/ai/`: `gemini.py` (cliente com retry/fallback), `summarizer.py` (resumos) e `flashcards_generator.py` (extração de cartões).
-- **Execução em segundo plano**: `POST .../summary` e `POST .../flashcards/generate` criam registros em `ai_jobs` e respondem `202`; o frontend faz polling do detalhe a cada 2,5 s. O estado vive no banco (`ai_jobs`), sobrevivendo a recarregamentos de página.
-- **Flashcards & Repetição Espaçada (SM-2)**:
-  - Os flashcards são gerados em JSON estruturado com perguntas focadas em recordação ativa (*Active Recall*) e no princípio da informação mínima.
-  - Cada revisão submete uma avaliação de 0 a 3 (**Errei**, **Difícil**, **Bom**, **Fácil**).
-  - O algoritmo SM-2 atualiza dinamicamente o fator de facilidade (`ease_factor`), o intervalo (`interval_days`), as repetições e agenda a próxima revisão (`next_review_at`) no PostgreSQL.
-- **Resiliência do Gemini**: *Round-robin* com backoff crescente por até 8 rodadas entre múltiplos modelos de fallback para contornar oscilações e códigos 503/429 do tier gratuito.
-- **Prompt** em português, com estrutura fixa (Visão geral · Conceitos-chave · Pontos principais · Para fixar), instruído a usar somente o conteúdo do material.
-- Em produção, recomenda-se **ativar faturamento no projeto Google (pay-as-you-go)**: os limites sobem ordens de grandeza e as rejeições por "alta demanda" praticamente desaparecem.
+## 👤 Autor
 
-## Decisões de segurança
-
-- Senhas: bcrypt (12 rounds); nunca armazenadas em texto puro.
-- Sessão: JWT assinado (HS256). O SPA envia o token no header `Authorization: Bearer` (guardado em `localStorage`) — necessário porque em previews embutidos em iframe os navegadores bloqueiam cookies de terceiros. A API também emite o token em cookie `httpOnly` (`SameSite=None; Secure; Partitioned` atrás de HTTPS, `Lax` em HTTP local) como canal secundário. Tokens expiram em 7 dias.
-- Markdown gerado pela IA é renderizado sem HTML bruto (react-markdown), o que elimina XSS por conteúdo gerado.
-- `GEMINI_API_KEY` fica só em `backend/.env` (ignorado pelo git) e nunca é registrada em logs.
-- Login com mensagem genérica (não revela se o e-mail existe); e-mails normalizados em minúsculas.
-- Todo acesso a material filtra por `user_id`; material de outro usuário responde 404.
-- Upload: extensão + assinatura binária `%PDF-` (*magic bytes*) verificadas, limite de tamanho (`MAX_UPLOAD_MB`) com leitura em blocos, PDFs protegidos por senha rejeitados com mensagem clara.
-- Rate Limiting em memória nas rotas críticas: mitigação de força bruta em `/api/auth/login` (10 req/min) e proteção de cotas da IA em `/api/materials/{id}/summary` e `/api/materials/{id}/flashcards/generate` (6 req/min).
-- O banco é acessado apenas via `DATABASE_URL`; a app não precisa de superusuário — só de um role dono do banco.
-
-## Limitações e Próximos Passos (Roadmap TCC & Startup)
-
-Ordenado por impacto de negócio e relevância pedagógica:
-
-1. **Tutor de IA Contextualizado (Chat Socrático)**:
-   - *Impacto: Máximo*. Interação conversacional direta com o PDF carregado, permitindo ao estudante tirar dúvidas em linguagem natural, pedir exemplos e explicações passo a passo.
-2. **OCR para PDFs Digitalizados / Imagens**:
-   - *Impacto: Alto*. Extração de texto de PDFs escaneados ou imagens via Tesseract / Gemini Multimodal, cobrindo apostilas digitalizadas e livros físicos fotografados.
-3. **Busca Semântica com Embeddings (RAG com pgvector)**:
-   - *Impacto: Alto*. Substituir o ranqueamento atual por contagem de termos por busca vetorial semântica usando `pgvector` nativo no PostgreSQL.
-4. **Ingestão de Múltiplos Formatos (Além de PDF)**:
-   - *Impacto: Médio-Alto*. Suporte a páginas web (URL scraping), arquivos Markdown, EPUB e transcrição de áudios de aulas.
-5. **Módulo de Cronograma e Trilhas de Estudo (Fase 6)**:
-   - *Impacto: Médio*. As tabelas relacionais `study_plans` e `study_plan_items` já estão modeladas e versionadas no banco; o próximo passo é a interface visual de calendário e metas diárias.
-
-## Deploy em Produção
-
-O projeto conta com orquestração completa por Docker Compose:
-- Consulte o guia passo a passo em [DEPLOY.md](./DEPLOY.md) para subir em VPS (com HTTPS automático via Caddy) ou em plataformas PaaS (Render / Railway).
-- Comando único de subida: `docker compose up -d --build`.
+**Leo Panarella**  
+Projeto de Conclusão Integrado (PCI) — 2026.

@@ -1,3 +1,15 @@
+"""
+StudyAI — API Backend (FastAPI + PostgreSQL)
+Projeto de Conclusão Integrado (PCI)
+Autor: Leo Panarella
+
+Ponto de entrada principal da aplicação:
+- Configuração do FastAPI e rotas da API (/api)
+- Gerenciamento de ciclo de vida (startup/shutdown)
+- Middleware de CORS para permitir requisições do frontend
+- Fallback para servir o build estático do React em produção
+"""
+
 import logging
 from contextlib import asynccontextmanager
 
