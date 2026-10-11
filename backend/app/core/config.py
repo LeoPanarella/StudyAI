@@ -29,10 +29,8 @@ class Settings(BaseSettings):
     UPLOAD_DIR: Path = Path("uploads")
     MAX_UPLOAD_MB: int = 25
 
-    # IA (fases 3-5)
-    AI_PROVIDER: str = "auto"  # "auto", "gemini" ou "groq"
-    GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    # IA (Google Gemini + Motor Local de Contingência)
+    AI_PROVIDER: str = "gemini"  # "gemini" ou "local"
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.5-flash-lite"  # modelo principal rápido e estável no tier gratuito
     GEMINI_FALLBACK_MODELS: str = (  # modelos tentados em ordem se o principal atingir limite

@@ -62,58 +62,6 @@ def _models_chain() -> list[str]:
     return [m for m in chain if m and not (m in seen or seen.add(m))]
 
 
-def _generate_groq(
-    prompt: str,
-    *,
-    system_instruction: str | None = None,
-    temperature: float = 0.3,
-    max_output_tokens: int = 4096,
-    json_schema: dict | None = None,
-) -> tuple[str, str]:
-    """Chama a API ultrarrápida do Groq (OpenAI-compatible) via LPU."""
-    if not settings.GROQ_API_KEY:
-        raise AINotConfiguredError("Chave do Groq não configurada (defina GROQ_API_KEY no servidor).")
-
-    headers = {
-        "Authorization": f"Bearer {settings.GROQ_API_KEY.strip()}",
-        "Content-Type": "application/json",
-    }
-    messages = []
-    if system_instruction:
-        messages.append({"role": "system", "content": system_instruction})
-    messages.append({"role": "user", "content": prompt})
-
-    models_to_try = [settings.GROQ_MODEL or "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-    with httpx.Client(timeout=settings.GEMINI_TIMEOUT_SECONDS) as client:
-        for model in models_to_try:
-            body: dict = {
-                "model": model,
-                "messages": messages,
-                "temperature": temperature,
-                "max_tokens": max_output_tokens,
-            }
-            if json_schema:
-                body["response_format"] = {"type": "json_object"}
-            try:
-                resp = client.post("https://api.groq.com/openai/v1/chat/completions", json=body, headers=headers)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    content = data["choices"][0]["message"]["content"]
-                    log.info("Groq ok com modelo: %s", model)
-                    return content.strip(), model
-                elif resp.status_code in (401, 403):
-                    raise AIError("A chave da API do Groq (GROQ_API_KEY) foi recusada.", 502)
-                else:
-                    log.warning("Groq status %d no modelo %s: %s", resp.status_code, model, resp.text)
-            except AIError:
-                raise
-            except Exception as e:
-                log.warning("Falha de conexão com Groq (%s): %s", model, e)
-                continue
-
-    raise AIUnavailableError("O serviço Groq está temporariamente indisponível. Tentando alternativa...")
-
-
 def _generate_local_nlp(prompt: str, json_schema: dict | None = None) -> tuple[str, str]:
     """Fallback inteligente para que o estudante nunca fique sem resumo ou flashcards no PCI."""
     lines = [
@@ -174,30 +122,16 @@ def generate_text(
     max_output_tokens: int = 8192,
     json_schema: dict | None = None,
 ) -> tuple[str, str]:
-    """Gera texto. Retorna (texto, modelo_usado).
+    """Gera texto com IA. Retorna (texto, modelo_usado).
 
-    Suporta Groq (ultrarrápido), Google Gemini e Motor Local Offline sem travar o PCI.
+    Prioriza o Google Gemini (modelos rápidos oficiais).
+    Caso a chave não esteja configurada ou o serviço oscile, utiliza o motor local de contingência.
     """
-    # 0. Se configurado explicitamente para modo local ou se não houver nenhuma chave configurada
-    if settings.AI_PROVIDER.lower() == "local" or (not settings.GEMINI_API_KEY and not settings.GROQ_API_KEY):
+    # 0. Se configurado explicitamente para modo local ou sem chave do Gemini
+    if settings.AI_PROVIDER.lower() == "local" or not settings.GEMINI_API_KEY:
         return _generate_local_nlp(prompt, json_schema=json_schema)
 
-    # 1. Se configurado explicitamente para Groq ou se houver chave do Groq no modo auto
-    if (settings.AI_PROVIDER.lower() == "groq") or (settings.AI_PROVIDER.lower() == "auto" and settings.GROQ_API_KEY):
-        try:
-            return _generate_groq(
-                prompt,
-                system_instruction=system_instruction,
-                temperature=temperature,
-                max_output_tokens=min(max_output_tokens, 4096),
-                json_schema=json_schema,
-            )
-        except AIError as exc:
-            if settings.AI_PROVIDER.lower() == "groq" or not settings.GEMINI_API_KEY:
-                raise exc
-            log.info("Groq falhou ou atingiu limite, fazendo fallback transparente para Gemini...")
-
-    # 2. Execução padrão com Google Gemini
+    # 1. Execução padrão com Google Gemini
     client = _client()
     config = types.GenerateContentConfig(
         system_instruction=system_instruction,
