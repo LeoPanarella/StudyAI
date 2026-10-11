@@ -31,11 +31,11 @@ class Settings(BaseSettings):
 
     # IA (fases 3-5)
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.5-flash"  # modelo principal estável
-    GEMINI_FALLBACK_MODELS: str = (  # modelos oficiais tentados em ordem se o principal atingir rate limit
-        "gemini-2.0-flash,gemini-1.5-flash,gemini-1.5-pro"
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"  # modelo principal rápido e estável no tier gratuito
+    GEMINI_FALLBACK_MODELS: str = (  # modelos tentados em ordem se o principal atingir limite
+        "gemini-3.5-flash,gemini-flash-lite-latest,gemini-3.8-flash"
     )
-    GEMINI_TIMEOUT_SECONDS: int = 90
+    GEMINI_TIMEOUT_SECONDS: int = 30
     GEMINI_RETRY_ROUNDS: int = 8  # rodadas (cada uma percorre todos os modelos); roda em segundo plano, então pode insistir
 
     @property
